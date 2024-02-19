@@ -28,7 +28,7 @@ metadata:
   name: flux-infra
   namespace: flux-system
 spec:
-  interval: 1m0s
+  interval: 1m
   ref:
     branch: main
   secretRef:
@@ -42,7 +42,7 @@ metadata:
   namespace: flux-system
 spec:
   serviceAccountName: flux-infra
-  interval: 10m
+  interval: 12h
   retryInterval: 3m
   path: ./deploy
   prune: true
