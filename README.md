@@ -3,20 +3,24 @@
 This repository is managed by the platform team who are responsible for
 the Kubernetes infrastructure and have direct access to the fleet of clusters.
 
-## Scope
+## Scope and Access Control
 
-- Bootstrap Flux with multi-tenancy restrictions on fleet clusters
-- Configure the delivery of platform components (defined in `d1-infra` repository) 
-- Configure the delivery of applications (defined in `d1-apps` repository)
+The platform team that manages this repository must have **admin** rights to the `d1-fleet` repository
+and **cluster admin** rights to all clusters in the fleet to be able to perform the following tasks:
 
-## Access Control
-
-The platform team that manages this repository must have the following access rights:
-
-- **Admin** rights to the `d1-fleet` repository
-- **Cluster Admin** rights to all clusters in the fleet
+- Bootstrap Flux with multi-tenancy restrictions on fleet clusters.
+- Configure the delivery of platform components (defined in `d1-infra` repository).
+- Configure the delivery of applications (defined in `d1-apps` repository).
 
 ## Bootstrap Procedure
+
+The bootstrap procedure is a one-time operation that sets up the Flux controllers on the cluster, and
+configures the delivery of platform components and applications.
+
+After bootstrap, Flux will monitor the repository for changes and will reconcile itself from
+the Kubernetes manifests pushed by the Flux CLI in the repository. Changes to Flux configuration
+and version upgrades are done by modifying the repository and letting Flux reconcile the changes,
+there is no need to run the bootstrap command again nor connect to the cluster.
 
 ## Create a GitHub Account for Flux
 
