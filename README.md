@@ -76,8 +76,9 @@ to the `cluster/staging` directory in the `d1-fleet` repository will be automati
 
 ### Bootstrap with the enterprise version
 
-When using the ControlPLane enterprise distribution for Flux, you need to create a 
-Kubernetes Image Pull Secret for the enterprise registry in the `flux-system` namespace.
+When using the [ControlPlane enterprise](https://control-plane.io/enterprise-for-flux-cd/)
+distribution for Flux, you need to create a 
+Kubernetes Image Pull Secret for the enterprise registry in the `flux-system` namespace:
 
 ```shell
 flux create secret oci flux-enterprise-auth \
@@ -100,5 +101,19 @@ flux bootstrap github \
   --path=clusters/staging
 ```
 
-Another option is to copy the images from the ControlPLane registry to your organization's registry
+Another option is to copy the images from the ControlPlane registry to your organization's registry
 and use the `--registry` flag to point to your registry.
+
+### Rotate the Flux GitHub token
+
+It is recommended to use GitHub fine-grained personal access tokens that expire. Before the Flux bot token expires,
+you should rotate the token by creating a new one and updating the `flux-system` secret in the `flux-system` namespace:
+
+```shell
+flux create secret git flux-system \
+  --namespace=flux-system \
+  --url=https://github.com \
+  --username=git \
+  --password=$NEW_GITHUB_TOKEN
+```
+
