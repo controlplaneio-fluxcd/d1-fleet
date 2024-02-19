@@ -12,6 +12,25 @@ and **cluster admin** rights to all clusters in the fleet to be able to perform 
 - Configure the delivery of platform components (defined in `d1-infra` repository).
 - Configure the delivery of applications (defined in `d1-apps` repository).
 
+## Create a GitHub Account for Flux
+
+Create a new GitHub account for the Flux bot. This account will be used by the Flux CLI and
+the Flux controllers running on clusters to authenticate with GitHub.
+
+Create a GitHub team under your organisation for the bot account and give it the following permissions:
+
+- Read and write access to the `d1-fleet` repository (required for cluster bootstrap)
+- Push access to the `main` branch of the `d1-fleet` repository (required for cluster bootstrap)
+- Read and write access to the `d1-infra` and `d1-apps` repositories (required for cluster reconciliation and image automation)
+
+Create a GitHub fine-grained personal access token for the bot account with
+the following permissions for the Flux repositories:
+
+- `Administration` -> `Access: Read-only`
+- `Commit statuses` -> `Access: Read and write`
+- `Contents` -> `Access: Read and write`
+- `Metadata` -> `Access: Read-only`
+
 ## Bootstrap Procedure
 
 The bootstrap procedure is a one-time operation that sets up the Flux controllers on the cluster, and
@@ -22,24 +41,6 @@ the Kubernetes manifests pushed by the Flux CLI in the repository. Changes to Fl
 and version upgrades are done by modifying the repository and letting Flux reconcile the changes,
 there is no need to run the bootstrap command again nor connect to the cluster.
 
-## Create a GitHub Account for Flux
-
-Create a new GitHub account for the Flux bot. This account will be used by the Flux CLI and
-the Flux controllers running on clusters to authenticate with GitHub.
-
-Create a GitHub team under your organisation for the bot account and give it the following permissions:
-
-- Read and write access to the `d1-fleet` repository (required for cluster bootstrap)
-- Push access to the `main` branch of the `d1-fleet` repository (required for cluster bootstrap)
-
-Create a GitHub fine-grained personal access token for the bot account with
-the following permissions for the `d1-fleet` repository:
-
-- `Administration` -> `Access: Read-only`
-- `Commit statuses` -> `Access: Read and write`
-- `Contents` -> `Access: Read and write`
-- `Metadata` -> `Access: Read-only`
-
 ### Bootstrap the staging cluster
 
 Make sure to set the default context in your kubeconfig to your staging cluster, then run bootstrap with:
@@ -48,6 +49,7 @@ Make sure to set the default context in your kubeconfig to your staging cluster,
 export GITHUB_TOKEN=<Flux Bot PAT>
 
 flux bootstrap github \
+  --registry=ghcr.io/fluxcd \
   --components-extra=image-reflector-controller,image-automation-controller \
   --owner=controlplaneio-fluxcd \
   --repository=d1-fleet \
@@ -71,3 +73,32 @@ This Flux CLI will perform the following actions on the cluster:
 
 From this point on, the Flux controllers will reconcile the cluster state with the desired state, any changes
 to the `cluster/staging` directory in the `d1-fleet` repository will be automatically applied to the cluster.
+
+### Bootstrap with the enterprise version
+
+When using the ControlPLane enterprise distribution for Flux, you need to create a 
+Kubernetes Image Pull Secret for the enterprise registry in the `flux-system` namespace.
+
+```shell
+flux create secret oci flux-enterprise-auth \
+  --url=ghcr.io \
+  --username=flux \
+  --password=$FLUX_ENTERPRISE_TOKEN
+```
+
+Then run the bootstrap command by specifying the enterprise registry and the image pull secret:
+
+```shell
+flux bootstrap github \
+  --registry=ghcr.io/controlplaneio-fluxcd/disroless \
+  --image-pull-secret=flux-enterprise-auth \
+  --components-extra=image-reflector-controller,image-automation-controller \
+  --owner=controlplaneio-fluxcd \
+  --repository=d1-fleet \
+  --branch=main \
+  --token-auth \
+  --path=clusters/staging
+```
+
+Another option is to copy the images from the ControlPLane registry to your organization's registry
+and use the `--registry` flag to point to your registry.
