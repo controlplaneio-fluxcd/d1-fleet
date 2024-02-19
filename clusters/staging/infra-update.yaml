@@ -7,7 +7,7 @@ spec:
   serviceAccountName: flux-infra
   interval: 12h
   retryInterval: 3m
-  path: ./automation
+  path: ./update
   prune: true
   sourceRef:
     kind: GitRepository
