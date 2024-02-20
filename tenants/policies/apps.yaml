@@ -1,0 +1,28 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: apps-tenant
+spec:
+  validationFailureAction: Enforce
+  background: false
+  generateExisting: true
+  rules:
+    - name: sync-secrets
+      match:
+        any:
+          - resources:
+              kinds:
+                - Namespace
+              selector:
+                matchLabels:
+                  toolkit.fluxcd.io/tenant: "apps"
+      generate:
+        namespace: "{{request.object.metadata.name}}"
+        synchronize: true
+        cloneList:
+          namespace: flux-system
+          kinds:
+            - v1/Secret
+          selector:
+            matchLabels:
+              toolkit.fluxcd.io/tenant: "apps"

@@ -123,3 +123,26 @@ flux create secret git flux-system \
   --password=$NEW_GITHUB_TOKEN
 ```
 
+## Onboarding tenants applications
+
+Create a GitHub fine-grained personal access token for the Flux bot account with
+the following permissions for the `d1-apps` repository:
+
+- `Administration` -> `Access: Read-only`
+- `Commit statuses` -> `Access: Read and write`
+- `Contents` -> `Access: Read and write`
+- `Metadata` -> `Access: Read-only`
+
+After the cluster is bootstrapped, the platform team can onboard tenant applications by creating
+a Kubernetes secret in the `flux-system` namespace with the tenant's GitHub PAT:
+
+```shell
+export APPS_GITHUB_TOKEN=<Flux bot apps PAT>
+
+flux create secret git flux-apps \
+  --namespace=flux-system \
+  --label=toolkit.fluxcd.io/tenant=apps \
+  --url=https://github.com \
+  --username=git \
+  --password=$APPS_GITHUB_TOKEN
+```
