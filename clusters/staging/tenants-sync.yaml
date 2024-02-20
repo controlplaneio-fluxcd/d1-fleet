@@ -1,10 +1,12 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: tenants
+  name: flux-tenants
   namespace: flux-system
 spec:
   serviceAccountName: kustomize-controller
+  dependsOn:
+    - name: flux-infra
   interval: 12h
   retryInterval: 3m
   path: ./tenants
@@ -17,3 +19,4 @@ spec:
   postBuild:
     substitute:
       environment: "staging"
+      branch: "main"
