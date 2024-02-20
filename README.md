@@ -23,7 +23,7 @@ Create a GitHub team under your organisation for the bot account and give it the
 - Push access to the `main` branch of the `d1-fleet` repository (required for cluster bootstrap)
 - Read and write access to the `d1-infra` and `d1-apps` repositories (required for cluster reconciliation and image automation)
 
-### Flux GitHub PAT
+### Flux GitHub PAT for platform components
 
 Create a GitHub fine-grained personal access token for the bot account with
 the following permissions for the Flux repositories:
@@ -34,8 +34,8 @@ the following permissions for the Flux repositories:
 - `Metadata` -> `Access: Read-only`
 
 This token will be stored in all clusters to authenticate with GitHub to pull the fleet desired state
-from the `d1-fleet`, `d1-infra` and `d1-apps` repositories. The token is also used to automate the
-Helm chart updates in the `d1-infra` and `d1-apps` repositories, where the bot account has push access.
+from the `d1-fleet` and `d1-infra` repositories. The token is also used to automate the
+Helm chart updates in the `d1-infra` repository, where the bot account has push access to the main branch.
 
 ## Bootstrap Procedure
 
@@ -110,7 +110,7 @@ flux bootstrap github \
 Another option is to copy the images from the ControlPlane registry to your organization's registry
 and use the `--registry` flag to point to your registry.
 
-### Rotate the Flux GitHub token
+### Rotate the Flux GitHub PAT
 
 It is recommended to use GitHub fine-grained personal access tokens that expire. Before the Flux bot token expires,
 you should rotate the token by creating a new one and updating the `flux-system` secret in the `flux-system` namespace:
@@ -123,7 +123,13 @@ flux create secret git flux-system \
   --password=$NEW_GITHUB_TOKEN
 ```
 
-## Onboarding tenants applications
+## Onboarding tenants
+
+The platform team is responsible for onboarding the applications defined as Flux HelmReleases in the
+[d1-apps repository](https://github.com/controlplaneio-fluxcd/d1-apps) and restricting the access
+to predefined Kubernetes namespaces.
+
+### Flux GitHub PAT for tenant components
 
 Create a GitHub fine-grained personal access token for the Flux bot account with
 the following permissions for the `d1-apps` repository:
@@ -146,3 +152,96 @@ flux create secret git flux-apps \
   --username=git \
   --password=$APPS_GITHUB_TOKEN
 ```
+
+The tenant GitHub PAT secret is propagated from the `flux-system` namespace to all namespaces
+where the tenant applications are running, using a Kyverno policy. When rotating the tenant GitHub PAT,
+updating the `flux-apps` secret in the `flux-system` namespace will automatically propagate the new token
+to all tenant namespaces labeled with `toolkit.fluxcd.io/tenant: apps`.
+
+### Continuous Delivery for tenant applications
+
+For each namespace belonging to a tenant, the platform team must define the Kubernetes
+namespace, RBAC, Flux GitRepository and Kustomization custom resources under the
+tenant's directory. The directory structure under
+[tenants/apps](https://github.com/controlplaneio-fluxcd/d1-fleet/tree/main/tenants/apps)
+matches the components defined in the
+[d1-apps repository](https://github.com/controlplaneio-fluxcd/d1-apps/components).
+
+For example, the `d1-fleet` repository contains the following definitions for the `backend` namespace:
+
+```shell
+./tenants/apps/backend/
+├── kustomization.yaml
+├── namespace.yaml
+├── rbac.yaml
+└── sync.yaml
+```
+
+Which configures the reconciliation under a restricted service account for the `backend` components defined in the
+[d1-apps repository](https://github.com/controlplaneio-fluxcd/d1-apps/components/backend):
+
+```shell
+./components/backend/
+├── base
+│   ├── bitnamicharts.yaml
+│   ├── kustomization.yaml
+│   ├── memcached.yaml
+│   └── redis.yaml
+├── production
+│   ├── kustomization.yaml
+│   ├── memcached-values.yaml
+│   └── redis-values.yaml
+└── staging
+    ├── kustomization.yaml
+    ├── memcached-values.yaml
+    └── redis-values.yaml
+```
+
+Changes made by the dev team to the `d1-apps` repository in the `main` branch will
+be automatically reconciled by the Flux controllers running in the staging cluster.
+
+Changes made by the dev team to the `d1-apps` repository in the `production` branch will
+be automatically reconciled by the Flux controllers running in the production cluster fleet.
+
+The dev team can make any changes inside the namespaces assigned by the platform team, but they
+cannot change any cluster-wide resources or the namespace itself.
+
+### Helm release automation for tenant applications
+
+The staging cluster runs the Flux image automation controllers which automatically
+update the HelmRelease definitions in the `main` branch of the `d1-apps` repository
+based on Flux image polices defined by the dev team.
+
+When a new chart version is pushed to the container registry, and if it matches the semver policy,
+Flux will update the HelmRelease YAML definitions and will push the changes to the `main` branch.
+
+After the changes are reconciled on staging, the dev team can promote the changes
+to the production clusters by merging the `main` branch into the `production` branch of the `d1-apps` repository.
+
+The platform team is responsible for configuring a dedicated Kubernetes namespace for 
+the image policies and defining the Flux image update automation custom resources in the `d1-fleet` repository:
+
+```shell
+./tenants-update/apps/
+├── automation.yaml
+├── kustomization.yaml
+├── namespace.yaml
+├── rbac.yaml
+└── sync.yaml
+```
+
+The above configuration will reconcile the image polices define in the
+[d1-apps repository](https://github.com/controlplaneio-fluxcd/d1-apps/components):
+
+```shell
+./update/
+├── backend-memcached.yaml
+├── backend-redis.yaml
+├── frontend-podinfo.yaml
+└── kustomization.yaml
+```
+
+The dev team has full control over the image policies, and they are responsible for
+defining the image update automation rules for their applications.
+The platform team is responsible for setting up the infrastructure for running the
+Flux image automation controllers and their access to the dev team repository.
