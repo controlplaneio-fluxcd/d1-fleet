@@ -3,7 +3,6 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
 metadata:
   name: flux-apps
-  namespace: frontend
 spec:
   interval: 1m
   ref:
@@ -16,9 +15,7 @@ apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: flux-frontend
-  namespace: frontend
 spec:
-  targetNamespace: frontend
   serviceAccountName: flux-apps
   interval: 12h
   retryInterval: 3m
