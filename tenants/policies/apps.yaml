@@ -2,6 +2,8 @@ apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
   name: apps-tenant
+  annotations:
+    kustomize.toolkit.fluxcd.io/force: "Enabled"
 spec:
   validationFailureAction: Enforce
   background: false
