@@ -9,8 +9,8 @@ The platform team that manages this repository must have **admin** rights to the
 and **cluster admin** rights to all clusters in the fleet to be able to perform the following tasks:
 
 - Bootstrap Flux with multi-tenancy restrictions on fleet clusters.
-- Configure the delivery of platform components (defined in `d1-infra` repository).
-- Configure the delivery of applications (defined in `d1-apps` repository).
+- Configure the delivery of platform components (defined in [d1-infra repository](https://github.com/controlplaneio-fluxcd/d1-infra)).
+- Configure the delivery of applications (defined in [d1-apps repository](https://github.com/controlplaneio-fluxcd/d1-apps)).
 
 ## Create a GitHub Account for Flux
 
@@ -23,6 +23,8 @@ Create a GitHub team under your organisation for the bot account and give it the
 - Push access to the `main` branch of the `d1-fleet` repository (required for cluster bootstrap)
 - Read and write access to the `d1-infra` and `d1-apps` repositories (required for cluster reconciliation and image automation)
 
+### Flux GitHub PAT
+
 Create a GitHub fine-grained personal access token for the bot account with
 the following permissions for the Flux repositories:
 
@@ -30,6 +32,10 @@ the following permissions for the Flux repositories:
 - `Commit statuses` -> `Access: Read and write`
 - `Contents` -> `Access: Read and write`
 - `Metadata` -> `Access: Read-only`
+
+This token will be stored in all clusters to authenticate with GitHub to pull the fleet desired state
+from the `d1-fleet`, `d1-infra` and `d1-apps` repositories. The token is also used to automate the
+Helm chart updates in the `d1-infra` and `d1-apps` repositories, where the bot account has push access.
 
 ## Bootstrap Procedure
 
