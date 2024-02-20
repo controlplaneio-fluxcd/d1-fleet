@@ -29,3 +29,13 @@ spec:
     name: flux-apps
   timeout: 15m
   wait: true
+  patches:
+    - patch: |
+        apiVersion: helm.toolkit.fluxcd.io/v2beta2
+        kind: HelmRelease
+        metadata:
+          name: all
+        spec:
+          serviceAccountName: flux-apps
+      target:
+        kind: HelmRelease
