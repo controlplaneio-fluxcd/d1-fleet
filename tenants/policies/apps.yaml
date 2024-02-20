@@ -7,12 +7,14 @@ spec:
   background: false
   generateExisting: true
   rules:
-    - name: sync-secrets
+    # This rule ensures that all namespaces belonging to the apps tenant
+    # have a copy of the apps secrets from the flux-system namespace.
+    - name: sync-apps-secrets
       match:
         any:
           - resources:
               kinds:
-                - Namespace
+                - v1/Namespace
               selector:
                 matchLabels:
                   toolkit.fluxcd.io/tenant: "apps"
@@ -26,3 +28,19 @@ spec:
           selector:
             matchLabels:
               toolkit.fluxcd.io/tenant: "apps"
+    # This rule ensures that all HelmRepository belonging to the apps tenant
+    # are of type OCI.
+    - name: helm-oci-only
+      match:
+        any:
+          - resources:
+              kinds:
+                - HelmRepository
+              namespaceSelector:
+                matchLabels:
+                  toolkit.fluxcd.io/tenant: "apps"
+      validate:
+        message: "spec.type must be oci"
+        anyPattern:
+          - spec:
+              type: "oci"
