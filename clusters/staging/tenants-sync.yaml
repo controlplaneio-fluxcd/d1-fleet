@@ -14,4 +14,6 @@ spec:
     name: flux-system
   timeout: 15m
   wait: true
-
+  postBuild:
+    substitute:
+      environment: "staging"
