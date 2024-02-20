@@ -18,6 +18,7 @@ metadata:
   name: flux-frontend
   namespace: frontend
 spec:
+  targetNamespace: frontend
   serviceAccountName: flux-apps
   interval: 12h
   retryInterval: 3m
