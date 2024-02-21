@@ -170,7 +170,7 @@ matches the components defined in the
 For example, the `d1-fleet` repository contains the following definitions for the `backend` namespace:
 
 ```shell
-./tenants/apps/backend/
+./tenants/apps/components/backend/
 ├── kustomization.yaml
 ├── namespace.yaml
 ├── rbac.yaml
@@ -222,7 +222,7 @@ The platform team is responsible for configuring a dedicated Kubernetes namespac
 the image policies and defining the Flux image update automation custom resources in the `d1-fleet` repository:
 
 ```shell
-./tenants-update/apps/
+./tenants/apps/update/
 ├── automation.yaml
 ├── kustomization.yaml
 ├── namespace.yaml
