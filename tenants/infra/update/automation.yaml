@@ -10,14 +10,14 @@ spec:
   git:
     checkout:
       ref:
-        branch: ${BRANCH}
+        branch: ${GIT_BRANCH}
     commit:
       author:
         email: controlplaneio-fluxcd-bot@users.noreply.github.com
         name: controlplaneio-fluxcd-bot
       messageTemplate: '{{range .Updated.Images}}{{println .}}{{end}}'
     push:
-      branch: ${BRANCH}
+      branch: ${GIT_BRANCH}
   update:
     path: "./components"
     strategy: Setters

@@ -32,3 +32,7 @@ spec:
           value: flux-apps
       target:
         kind: "(HelmRelease|Kustomization)"
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: flux-runtime-info
