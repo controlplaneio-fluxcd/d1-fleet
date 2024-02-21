@@ -1,0 +1,11 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: flux-infra
+spec:
+  interval: 1m
+  ref:
+    branch: ${GIT_BRANCH}
+  secretRef:
+    name: flux-system
+  url: https://github.com/controlplaneio-fluxcd/d1-infra.git

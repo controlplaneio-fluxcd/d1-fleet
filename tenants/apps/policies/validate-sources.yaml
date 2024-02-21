@@ -1,0 +1,26 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: validate-apps-sources
+  annotations:
+    kustomize.toolkit.fluxcd.io/force: "Enabled"
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    # This rule ensures that all HelmRepository belonging to the apps tenant
+    # are of type OCI.
+    - name: helm-oci-only
+      match:
+        any:
+          - resources:
+              kinds:
+                - HelmRepository
+              namespaceSelector:
+                matchLabels:
+                  toolkit.fluxcd.io/tenant: "apps"
+      validate:
+        message: "spec.type must be oci"
+        anyPattern:
+          - spec:
+              type: "oci"

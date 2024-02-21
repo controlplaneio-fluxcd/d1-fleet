@@ -1,0 +1,23 @@
+apiVersion: image.toolkit.fluxcd.io/v1beta1
+kind: ImageUpdateAutomation
+metadata:
+  name: flux-apps
+spec:
+  interval: 30m
+  sourceRef:
+    kind: GitRepository
+    name: flux-apps
+  git:
+    checkout:
+      ref:
+        branch: ${GIT_BRANCH}
+    commit:
+      author:
+        email: controlplaneio-fluxcd-bot@users.noreply.github.com
+        name: controlplaneio-fluxcd-bot
+      messageTemplate: '{{range .Updated.Images}}{{println .}}{{end}}'
+    push:
+      branch: ${GIT_BRANCH}
+  update:
+    path: "./components"
+    strategy: Setters

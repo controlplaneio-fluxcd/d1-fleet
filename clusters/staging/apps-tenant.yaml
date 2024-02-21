@@ -1,16 +1,20 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: flux-tenants-update
+  name: flux-apps-tenant
   namespace: flux-system
 spec:
   serviceAccountName: kustomize-controller
   dependsOn:
-    - name: flux-infra
+    - name: flux-infra-tenant
   interval: 12h
   retryInterval: 3m
-  path: ./tenants-update
+  path: ./tenants/apps
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: flux-runtime-info

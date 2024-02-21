@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flux-runtime-info
+  namespace: flux-system
+  labels:
+    toolkit.fluxcd.io/runtime: "true"
+  annotations:
+    kustomize.toolkit.fluxcd.io/ssa: "Merge"
+data:
+  ENVIRONMENT: "staging"
+  GIT_BRANCH: "main"
+  CLUSTER_NAME: "staging-1"
+  CLUSTER_DOMAIN: "preview1.example.com"
+

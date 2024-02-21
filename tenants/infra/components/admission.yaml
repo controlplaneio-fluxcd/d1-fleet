@@ -1,0 +1,36 @@
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: admission-controllers
+spec:
+  serviceAccountName: flux-infra
+  dependsOn:
+    - name: monitoring-controllers
+  interval: 1h
+  retryInterval: 2m
+  timeout: 10m
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-infra
+  path: components/admission/controllers/${ENVIRONMENT}
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: admission-configs
+spec:
+  serviceAccountName: flux-infra
+  dependsOn:
+    - name: admission-controllers
+  interval: 1h
+  retryInterval: 2m
+  timeout: 5m
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-infra
+  path: components/admission/configs/${ENVIRONMENT}
