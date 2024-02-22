@@ -334,3 +334,58 @@ The dev team has full control over the image policies, and they are responsible 
 defining the image update automation rules for their applications.
 The platform team is responsible for setting up the infrastructure for running the
 Flux image automation controllers and their access to the dev team repository.
+
+### Bootstrap the production clusters
+
+Make sure to set the default context in your kubeconfig to your production cluster, then run bootstrap with:
+
+```shell
+export GITHUB_TOKEN=<Flux platform PAT>
+
+flux bootstrap github \
+  --registry=ghcr.io/fluxcd \
+  --owner=controlplaneio-fluxcd \
+  --repository=d1-fleet \
+  --branch=main \
+  --token-auth \
+  --path=clusters/prod-eu
+```
+
+After bootstrap, Flux will provision the production cluster with add-ons from `production`
+branch of the `d1-infra` repository.
+
+To kick off the reconciliation of the tenant applications, the platform team must create the 
+`flux-apps` secret in the `flux-system` namespace with the tenant's GitHub PAT:
+
+```shell
+export APPS_GITHUB_TOKEN=<Flux apps PAT>
+
+flux create secret git flux-apps \
+  --namespace=flux-system \
+  --label=toolkit.fluxcd.io/tenant=apps \
+  --url=https://github.com \
+  --username=git \
+  --password=$APPS_GITHUB_TOKEN
+```
+
+After the `d1-infra` repository reconciles, Flux will proceed to reconcile the tenant applications
+from the `production` branch of the `d1-apps` repository.
+
+To monitor the reconciliation process, run the following commands in different terminals:
+
+```shell
+watch flux get kustomizations --all-namespaces
+watch kubectl get pods --all-namespaces
+```
+
+To list all the managed resources by Flux, run:
+
+```shell
+flux tree ks flux-system
+```
+
+To view the Flux events with the reconciliation status, run:
+
+```shell
+flux events -A
+```
