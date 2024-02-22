@@ -9,3 +9,4 @@ resources:
 labels:
   - pairs:
       toolkit.fluxcd.io/tenant: apps
+      toolkit.fluxcd.io/role: automation

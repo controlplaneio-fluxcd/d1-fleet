@@ -7,3 +7,4 @@ resources:
 labels:
   - pairs:
       toolkit.fluxcd.io/tenant: infra
+      toolkit.fluxcd.io/role: automation
