@@ -1,6 +1,6 @@
 # d1-fleet
 
-> [!IMPORTANT]
+> [!NOTE]
 > This repository is part of the reference architecture for the
 > [ControlPlane Enterprise for Flux CD](https://github.com/controlplaneio-fluxcd/distribution).
 >
