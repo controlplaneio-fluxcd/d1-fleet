@@ -123,6 +123,81 @@ flux create secret git flux-system \
   --password=$NEW_GITHUB_TOKEN
 ```
 
+## Onboarding platform components
+
+The platform team is responsible for onboarding the platform components defined as Flux HelmReleases in the
+[d1-infra repository](https://github.com/controlplaneio-fluxcd/d1-infra) and set the dependencies
+between the components.
+
+Platform components are cluster add-ons such as CRD and admission controllers,
+and are reconciled by Flux as the **cluster admin**.
+
+To onboard a component from the `d1-infra` repository, the platform team must add a
+Flux Kustomization to the `tenants/infra/components` directory in the `d1-fleet` repository.
+
+For example, the `d1-fleet` repository contains the following definitions for the `infra` tenant:
+
+```shell
+./tenants/infra/components/
+├── admission.yaml
+└── monitoring.yaml
+```
+
+Which configures the reconciliation the `infra` components defined in the `d1-infra` repository:
+
+```shell
+./components/
+├── admission
+│   ├── configs
+│   │   ├── base
+│   │   ├── production
+│   │   └── staging
+│   └── controllers
+│       ├── base
+│       ├── production
+│       └── staging
+└── monitoring
+    ├── configs
+    │   ├── base
+    │   ├── production
+    │   └── staging
+    └── controllers
+        ├── base
+        ├── production
+        └── staging
+```
+
+### Runtime configuration
+
+In the `clusters/<cluster-name>/runtime-info.yaml` ConfigMaps, the platform team sets which
+configuration overlay to use for all components and from which branch to reconcile the changes.
+
+For example, the `staging` cluster is configured to reconcile the `main` branch of the `d1-infra`
+and `d1-apps` repositories, and to use the `staging` overlay for all components:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flux-runtime-info
+  namespace: flux-system
+  labels:
+    toolkit.fluxcd.io/runtime: "true"
+  annotations:
+    kustomize.toolkit.fluxcd.io/ssa: "Merge"
+data:
+  ENVIRONMENT: "staging"
+  GIT_BRANCH: "main"
+  CLUSTER_NAME: "staging-1"
+  CLUSTER_DOMAIN: "preview1.example.com"
+```
+
+The `flux-runtime-info` ConfigMap is propagated to all namespaces in a cluster by a Kyverno policy,
+and is used by all Flux Kustomizations to perform substitutions when reconciling the components.
+
+The platform team can extend the `flux-runtime-info` ConfigMap with additional fields such as
+cluster region, cloud provider ID, etc. 
+
 ## Onboarding tenants
 
 The platform team is responsible for onboarding the applications defined as Flux HelmReleases in the
@@ -162,7 +237,9 @@ to all tenant namespaces labeled with `toolkit.fluxcd.io/tenant: apps`.
 
 For each namespace belonging to a tenant, the platform team must define the Kubernetes
 namespace, RBAC, Flux GitRepository and Kustomization custom resources under the
-tenant's directory. The directory structure under
+tenant's directory. 
+
+The directory structure under
 [tenants/apps](https://github.com/controlplaneio-fluxcd/d1-fleet/tree/main/tenants/apps)
 matches the components defined in the
 [d1-apps repository](https://github.com/controlplaneio-fluxcd/d1-apps/components).
