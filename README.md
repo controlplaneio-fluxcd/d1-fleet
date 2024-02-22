@@ -335,7 +335,7 @@ defining the image update automation rules for their applications.
 The platform team is responsible for setting up the infrastructure for running the
 Flux image automation controllers and their access to the dev team repository.
 
-### Bootstrap the production clusters
+## Bootstrap the production clusters
 
 Make sure to set the default context in your kubeconfig to your production cluster, then run bootstrap with:
 
@@ -371,6 +371,8 @@ flux create secret git flux-apps \
 After the `d1-infra` repository reconciles, Flux will proceed to reconcile the tenant applications
 from the `production` branch of the `d1-apps` repository.
 
+### Monitoring
+
 To monitor the reconciliation process, run the following commands in different terminals:
 
 ```shell
@@ -389,3 +391,18 @@ To view the Flux events with the reconciliation status, run:
 ```shell
 flux events -A
 ```
+
+### Grafana dashboards
+
+To access Grafana, start port forward in a separate shell:
+
+```shell
+kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana  3000:80
+```
+
+Navigate to http://localhost:3000 in your browser and login with user `admin` and password `flux`.
+
+Flux dashboards:
+
+- Reconciliation stats: `http://localhost:3000/d/flux-cluster/flux-cluster-stats`
+- Controller stats: `http://localhost:3000/d/flux-control-plane/flux-control-plane`
