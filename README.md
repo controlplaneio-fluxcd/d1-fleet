@@ -24,6 +24,19 @@ and **cluster admin** rights to all clusters in the fleet to be able to perform 
 - Configure the delivery of platform components (defined in [d1-infra repository](https://github.com/controlplaneio-fluxcd/d1-infra)).
 - Configure the delivery of applications (defined in [d1-apps repository](https://github.com/controlplaneio-fluxcd/d1-apps)).
 
+```mermaid
+flowchart LR
+
+A((Infra Repo)) --> C
+B((Apps Repo)) --> C(((Fleet Repo)))
+C --> D(Flux \nsync main branch)
+D --> E[Staging cluster]
+C--> G(Flux \nsync prod branch)
+G --> H[Production-A]
+G --> I[Production-B]
+G --> J[Production-C]
+```
+
 ## Create a GitHub Account for Flux
 
 Create a new GitHub account for the Flux bot. This account will be used by the Flux CLI and
