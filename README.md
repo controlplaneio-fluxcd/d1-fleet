@@ -51,7 +51,7 @@ Create a GitHub team under your organisation for the bot account and give it the
 ### Flux GitHub PAT for platform components
 
 Create a GitHub fine-grained personal access token for the bot account with
-the following permissions for the Flux repositories:
+the following permissions for the `d1-infra`, `d1-apps` and `d1-fleet` repositories:
 
 - `Administration` -> `Access: Read-only`
 - `Commit statuses` -> `Access: Read and write`
@@ -122,7 +122,7 @@ Then run the bootstrap command by specifying the enterprise registry and the ima
 
 ```shell
 flux bootstrap github \
-  --registry=ghcr.io/controlplaneio-fluxcd/disroless \
+  --registry=ghcr.io/controlplaneio-fluxcd/distroless \
   --image-pull-secret=flux-enterprise-auth \
   --components-extra=image-reflector-controller,image-automation-controller \
   --owner=controlplaneio-fluxcd \
@@ -134,6 +134,23 @@ flux bootstrap github \
 
 Another option is to copy the images from the ControlPlane registry to your organization's registry
 and use the `--registry` flag to point to your registry.
+
+Copying an image from the ControlPlane registry to your organization's registry can be done with the following commands:
+
+```shell
+ FLUX_CONTROLLERS=(
+ "source-controller"
+ "kustomize-controller"
+ "helm-controller"
+ "notification-controller"
+ "image-reflector-controller"
+ "image-automation-controller"
+ )
+ 
+ for controller in "${FLUX_CONTROLLERS[@]}"; do
+   crane copy --all-tags ghcr.io/controlplaneio-fluxcd/distroless/$controller  <your-registry>/$controller
+ done
+```
 
 ### Rotate the Flux GitHub PAT
 
