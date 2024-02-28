@@ -1,0 +1,36 @@
+name: update-flux
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '00 7 * * 1-5'
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Update manifests
+        id: update
+        uses: controlplaneio-fluxcd/distribution/actions/update@gha-update-flux
+        with:
+          path: clusters/staging/flux-system
+          registry: ghcr.io/fluxcd
+          variant: alpine
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: update-flux-${{ steps.update.outputs.version }}
+          commit-message: |
+            Update manifests and image digests for Flux ${{ steps.update.outputs.version }}
+          title: Update Flux to ${{ steps.update.outputs.version }}
+          body: |
+            Update manifests and image digests for Flux ${{ steps.update.outputs.version }}
