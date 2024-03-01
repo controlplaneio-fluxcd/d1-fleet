@@ -262,12 +262,13 @@ a Kubernetes secret in the `flux-system` namespace with the tenant's GitHub PAT:
 ```shell
 export APPS_GITHUB_TOKEN=<Flux bot apps PAT>
 
-flux create secret git flux-apps \
-  --namespace=flux-system \
-  --label=toolkit.fluxcd.io/tenant=apps \
-  --url=https://github.com \
-  --username=git \
-  --password=$APPS_GITHUB_TOKEN
+kubectl create secret generic flux-apps \
+  --namespace flux-system \
+  --from-literal=username=git \
+  --from-literal=password=$APPS_GITHUB_TOKEN \
+  --from-literal=token=$APPS_GITHUB_TOKEN \
+  && kubectl label secret flux-apps "toolkit.fluxcd.io/tenant=apps" \
+  --namespace flux-system
 ```
 
 The tenant GitHub PAT secret is propagated from the `flux-system` namespace to all namespaces
@@ -390,12 +391,13 @@ To kick off the reconciliation of the tenant applications, the platform team mus
 ```shell
 export APPS_GITHUB_TOKEN=<Flux apps PAT>
 
-flux create secret git flux-apps \
-  --namespace=flux-system \
-  --label=toolkit.fluxcd.io/tenant=apps \
-  --url=https://github.com \
-  --username=git \
-  --password=$APPS_GITHUB_TOKEN
+kubectl create secret generic flux-apps \
+  --namespace flux-system \
+  --from-literal=username=git \
+  --from-literal=password=$APPS_GITHUB_TOKEN \
+  --from-literal=token=$APPS_GITHUB_TOKEN \
+  && kubectl label secret flux-apps "toolkit.fluxcd.io/tenant=apps" \
+  --namespace flux-system
 ```
 
 After the `d1-infra` repository reconciles, Flux will proceed to reconcile the tenant applications
