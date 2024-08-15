@@ -7,7 +7,7 @@
 > The `d1` reference architecture comprised of
 > [d1-fleet](https://github.com/controlplaneio-fluxcd/d1-fleet),
 > [d1-infra](https://github.com/controlplaneio-fluxcd/d1-infra) and
-> [d1-apps](https://github.com/controlplaneio-fluxcd/d1-infra)
+> [d1-apps](https://github.com/controlplaneio-fluxcd/d1-apps) 
 > is a set of best practices and production-ready examples for using Flux
 > to manage the continuous delivery of Kubernetes infrastructure and
 > applications on multi-cluster multi-tenant environments.
