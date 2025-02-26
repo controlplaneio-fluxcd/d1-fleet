@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Update manifests
         id: update
-        uses: controlplaneio-fluxcd/distribution/actions/update@gha-update-flux
+        uses: controlplaneio-fluxcd/distribution/actions/update@main
         with:
           path: clusters/staging/flux-system
           registry: ghcr.io/fluxcd
