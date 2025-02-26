@@ -1,0 +1,82 @@
+name: e2e
+
+on:
+  workflow_dispatch:
+  schedule:
+  - cron: 0 8 * * 1
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup Flux
+      uses: controlplaneio-fluxcd/distribution/actions/setup@main
+    - name: Setup Kubernetes
+      uses: helm/kind-action@main
+    - name: Bootstrap Flux
+      env:
+        GITHUB_TOKEN: ${{ secrets.FLUX_BOOTSTRAP }} # used implicitly by the command flux bootstrap github
+        GITHUB_OWNER: ${{ github.repository_owner }}
+      run: |
+        kubectl apply -f clusters/staging/flux-system/gotk-components.yaml
+        flux create secret git flux-system \
+          --url=https://github.com/${GITHUB_OWNER}/d1-fleet \
+          --username=git \
+          --password=$GITHUB_TOKEN
+
+        # now apply gotk-sync.yaml and the kustomizations from clusters/staging/flux-system/kustomization.yaml
+        kubectl apply -k clusters/staging/flux-system/
+    - name: Onboard Tenants
+      env:
+        GITHUB_TOKEN: ${{ secrets.FLUX_BOOTSTRAP }}
+      run: |
+        flux create secret git flux-apps \
+          --namespace=flux-system \
+          --label=toolkit.fluxcd.io/tenant=apps \
+          --url=https://github.com \
+          --username=git \
+          --password=$GITHUB_TOKEN
+    - name: Wait Resources
+      run: |
+        namespaces=(
+          flux-system
+          apps-update
+          backend
+          frontend
+        )
+
+        for namespace in "${namespaces[@]}"; do
+          while ! kubectl get ns $namespace > /dev/null 2>&1; do
+            echo "Waiting for namespace $namespace to be created..."
+            sleep 30
+          done
+        done
+
+        resources=(
+          ks/apps-update/flux-apps
+          ks/backend/flux-backend
+          ks/frontend/flux-frontend
+          imagepolicy/apps-update/backend-memcached
+          imagepolicy/apps-update/backend-redis
+          imagepolicy/apps-update/frontend-podinfo
+          imagepolicy/flux-system/kube-prometheus-stack
+          imagepolicy/flux-system/kyverno
+          imagepolicy/flux-system/metrics-server
+        )
+
+        for resource in "${resources[@]}"; do
+          kind=$(echo $resource | awk -F/ '{print $1}')
+          namespace=$(echo $resource | awk -F/ '{print $2}')
+          name=$(echo $resource | awk -F/ '{print $3}')
+
+          kubectl -n $namespace wait $kind/$name --for=condition=ready --timeout=5m
+        done
+    - name: Debug failure
+      if: failure()
+      run: |
+        kubectl -n flux-system get all
+        kubectl -n flux-system logs deploy/source-controller
+        kubectl -n flux-system logs deploy/kustomize-controller
+        kubectl -n flux-system logs deploy/helm-controller
+        flux get all --all-namespaces
