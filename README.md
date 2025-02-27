@@ -12,6 +12,12 @@
 > to manage the continuous delivery of Kubernetes infrastructure and
 > applications on multi-cluster multi-tenant environments.
 
+
+## Flux d1 Reference Architecture Guide
+
+The [flux d1 reference architecture guide](https://github.com/controlplaneio-fluxcd/distribution/blob/main/guides/ControlPlane_Flux_D1_Reference_Architecture_Guide.pdf)
+provide a comprehensive description of the Flux d1 reference architecture.
+
 ## Scope and Access Control
 
 This repository is managed by the platform team who are responsible for
