@@ -1,0 +1,99 @@
+apiVersion: fluxcd.controlplane.io/v1
+kind: FluxInstance
+metadata:
+  name: flux
+  namespace: flux-system
+spec:
+  distribution:
+    version: 2.7.x
+    registry: ghcr.io/fluxcd
+    artifact: "oci://ghcr.io/controlplaneio-fluxcd/flux-operator-manifests:latest"
+  components:
+    - source-controller
+    - kustomize-controller
+    - helm-controller
+    - notification-controller
+    - image-reflector-controller
+    - image-automation-controller
+    - source-watcher
+  cluster:
+    type: kubernetes
+    multitenant: true
+    tenantDefaultServiceAccount: default
+    networkPolicy: true
+    domain: "cluster.local"
+  sync:
+    kind: GitRepository
+    url: https://github.com/controlplaneio-fluxcd/d1-fleet.git
+    ref: "refs/heads/production"
+    path: "clusters/prod-us"
+    pullSecret: flux-system
+  kustomize:
+    patches:
+      - target:
+          kind: Kustomization
+          name: "flux-system"
+        patch: |
+          - op: add
+            path: /spec/serviceAccountName
+            value: kustomize-controller
+      - target:
+          kind: Deployment
+          name: "kustomize-controller"
+        patch: |
+          - op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --feature-gates=CancelHealthCheckOnNewRevision=true
+      - target:
+          kind: Deployment
+          name: "(kustomize-controller|helm-controller|source-controller)"
+        patch: |
+          - op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --concurrent=10
+          - op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --requeue-dependency=10s
+      - target:
+          kind: Deployment
+          name: "source-controller"
+        patch: |
+          - op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --helm-cache-max-size=10
+          - op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --helm-cache-ttl=60m
+          - op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --helm-cache-purge-interval=5m
+      - target:
+          kind: Deployment
+          name: "kustomize-controller"
+        patch: |
+          - op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --no-remote-bases=true
+          - op: replace
+            path: /spec/template/spec/volumes/0
+            value:
+              name: temp
+              emptyDir:
+                medium: Memory
+      - target:
+          kind: Deployment
+          name: "(kustomize-controller|helm-controller|source-controller)"
+        patch: |
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: all
+          spec:
+            template:
+              spec:
+                containers:
+                  - name: manager
+                    resources:
+                      limits:
+                        cpu: 2000m
+                        memory: 2Gi

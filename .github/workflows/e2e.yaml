@@ -19,14 +19,14 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.FLUX_BOOTSTRAP }} # used implicitly by the command flux bootstrap github
         GITHUB_OWNER: ${{ github.repository_owner }}
       run: |
-        kubectl apply -f clusters/staging/flux-system/gotk-components.yaml
+        helm install flux-operator oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator \
+          --namespace flux-system \
+          --create-namespace
         flux create secret git flux-system \
           --url=https://github.com/${GITHUB_OWNER}/d1-fleet \
           --username=git \
           --password=$GITHUB_TOKEN
-
-        # now apply gotk-sync.yaml and the kustomizations from clusters/staging/flux-system/kustomization.yaml
-        kubectl apply -k clusters/staging/flux-system/
+        kubectl apply -f clusters/staging/flux-system/flux-instance.yaml
     - name: Onboard Tenants
       env:
         GITHUB_TOKEN: ${{ secrets.FLUX_BOOTSTRAP }}
@@ -72,6 +72,8 @@ jobs:
 
           kubectl -n $namespace wait $kind/$name --for=condition=ready --timeout=5m
         done
+
+        flux get all --all-namespaces
     - name: Debug failure
       if: failure()
       run: |
