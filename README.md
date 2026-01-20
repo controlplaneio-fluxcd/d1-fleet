@@ -145,18 +145,19 @@ specify the distribution variant in the field `.spec.distribution.variant`.
 Copying an image from the ControlPlane registry to your organization's registry can be done with the following commands:
 
 ```shell
- FLUX_CONTROLLERS=(
- "source-controller"
- "kustomize-controller"
- "helm-controller"
- "notification-controller"
- "image-reflector-controller"
- "image-automation-controller"
- )
- 
- for controller in "${FLUX_CONTROLLERS[@]}"; do
-   crane copy --all-tags ghcr.io/controlplaneio-fluxcd/distroless/$controller  <your-registry>/$controller
- done
+FLUX_CONTROLLERS=(
+  "source-controller"
+  "kustomize-controller"
+  "helm-controller"
+  "notification-controller"
+  "image-reflector-controller"
+  "image-automation-controller"
+  "source-watcher"
+)
+
+for controller in "${FLUX_CONTROLLERS[@]}"; do
+  crane copy --all-tags ghcr.io/controlplaneio-fluxcd/distroless/$controller  <your-registry>/$controller
+done
 ```
 
 Manifest example:
