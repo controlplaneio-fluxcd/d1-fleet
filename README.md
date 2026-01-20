@@ -39,7 +39,7 @@ G --> J[Production-C]
 
 ## Create a GitHub Account for Flux
 
-Create a new GitHub account for the Flux bot. This account will be used by the Flux CLI and
+Create a new GitHub account for the Flux bot. This account will be used by
 the Flux controllers running on clusters to authenticate with GitHub.
 
 Create a GitHub team under your organisation for the bot account and give it the following permissions:
@@ -64,13 +64,18 @@ Helm chart updates in the `d1-infra` repository, where the bot account has push 
 
 ## Bootstrap Procedure
 
-The bootstrap procedure is a one-time operation that sets up the Flux controllers on the cluster, and
-configures the delivery of platform components and applications.
+The bootstrap procedure is a one-time operation that sets up Flux Operator and the Flux controllers
+on the cluster, and configures the delivery of platform components and applications.
 
-After bootstrap, Flux will monitor the repository for changes and will reconcile itself from
-the Kubernetes manifests pushed by the Flux CLI in the repository. Changes to Flux configuration
-and version upgrades are done by modifying the repository and letting Flux reconcile the changes,
-there is no need to run the bootstrap command again nor connect to the cluster.
+After bootstrap, Flux will monitor the repository for changes and will reconcile Flux Operator
+from the Kubernetes manifest at `./clusters/<cluster_name>/flux-system/flux-operator.yaml` and
+the FluxInstance resource from the Kubernetes manifest at
+`./clusters/<cluster_name>/flux-system/flux-instances.yaml`. Flux Operator, in turn, will
+reconcile Flux from the FluxInstance resource applied in the cluster by Flux. This results in
+Flux reconciling Flux Operator, and Flux Operator reconciling Flux, creating a self-sustaining
+reconciliation loop. Changes to Flux configuration and version upgrades are done by modifying
+the repository and letting Flux Operator reconcile the changes, there is no need to run the
+bootstrap command ever again nor connect to the cluster.
 
 ### Bootstrap the staging cluster
 
@@ -78,34 +83,35 @@ Make sure to set the default context in your kubeconfig to your staging cluster,
 
 ```shell
 export GITHUB_TOKEN=<Flux Bot PAT>
+export GITHUB_OWNER=<Your GitHub org or user>
 
-flux bootstrap github \
-  --registry=ghcr.io/fluxcd \
-  --components-extra=image-reflector-controller,image-automation-controller \
-  --owner=controlplaneio-fluxcd \
-  --repository=d1-fleet \
-  --branch=main \
-  --token-auth \
-  --path=clusters/staging
+# Install the Flux Operator Helm chart
+helm install flux-operator oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator \
+  --namespace flux-system \
+  --create-namespace
+
+# Create the flux-system Git secret with the Flux bot PAT
+flux create secret git flux-system \
+  --url=https://github.com/${GITHUB_OWNER}/d1-fleet \
+  --username=git \
+  --password=$GITHUB_TOKEN
+
+# Apply the FluxInstance custom resource to bootstrap Flux
+kubectl apply -f clusters/staging/flux-system/flux-instance.yaml
+
+# Onboard the apps tenant by creating the flux-apps secret with the apps GitHub PAT
+flux create secret git flux-apps \
+  --namespace=flux-system \
+  --label=toolkit.fluxcd.io/tenant=apps \
+  --url=https://github.com \
+  --username=git \
+  --password=$GITHUB_TOKEN
 ```
 
-The Flux CLI will use the bot PAT to push two commits to the `d1-fleet` repository:
-
-- First commit to create the `clusters/staging/flux-system/gotk-components.yaml` file
-  which contains the flux-system namespace, RBAC, network policies, CRDs and the controller deployments.
-- Second commit to create the `clusters/staging/flux-system/gotk-sync.yaml` file
-  which contains the Flux `GitRepository` and `Kustomization` custom resources for setting up the cluster reconciliation.
-
-This Flux CLI will perform the following actions on the cluster:
-
-- Creates a Kubernetes Secret named `flux-system` in the `flux-system` namespace that contains the bot PAT.
-- Builds the `cluster/staging/flux-system` kustomize overlays with the multi-tenancy patches and
-  applies the generated manifests to the cluster to kick off the reconciliation.
-
-From this point on, the Flux controllers will reconcile the cluster state with the desired state, any changes
+From this point on, the Flux controllers will reconcile the cluster state with the desired state. Any changes
 to the `cluster/staging` directory in the `d1-fleet` repository will be automatically applied to the cluster.
 
-### Bootstrap with the enterprise version
+### Upgrade to the enterprise version
 
 When using the [ControlPlane enterprise](https://control-plane.io/enterprise-for-flux-cd/)
 distribution for Flux, you need to create a 
@@ -118,22 +124,23 @@ flux create secret oci flux-enterprise-auth \
   --password=$FLUX_ENTERPRISE_TOKEN
 ```
 
-Then run the bootstrap command by specifying the enterprise registry and the image pull secret:
+Then you need to update the `.spec.distribution.registry` field of the FluxInstance to the
+Flux Enterprise distribution you prefer, such as `ghcr.io/controlplaneio-fluxcd/alpine` or
+`ghcr.io/controlplaneio-fluxcd/distroless`, and add the `.spec.distribution.imagePullSecret`
+field to reference the image pull secret created above. Example:
 
-```shell
-flux bootstrap github \
-  --registry=ghcr.io/controlplaneio-fluxcd/distroless \
-  --image-pull-secret=flux-enterprise-auth \
-  --components-extra=image-reflector-controller,image-automation-controller \
-  --owner=controlplaneio-fluxcd \
-  --repository=d1-fleet \
-  --branch=main \
-  --token-auth \
-  --path=clusters/staging
+```yaml
+spec:
+  distribution:
+    version: 2.7.x
+    registry: ghcr.io/controlplaneio-fluxcd/distroless-fips
+    artifact: "oci://ghcr.io/controlplaneio-fluxcd/flux-operator-manifests:latest"
+    imagePullSecret: flux-enterprise-auth
 ```
 
 Another option is to copy the images from the ControlPlane registry to your organization's registry
-and use the `--registry` flag to point to your registry.
+and update the `.spec.distribution.registry` field to point to your registry. You will also need to
+specify the distribution variant in the field `.spec.distribution.variant`.
 
 Copying an image from the ControlPlane registry to your organization's registry can be done with the following commands:
 
@@ -150,6 +157,16 @@ Copying an image from the ControlPlane registry to your organization's registry 
  for controller in "${FLUX_CONTROLLERS[@]}"; do
    crane copy --all-tags ghcr.io/controlplaneio-fluxcd/distroless/$controller  <your-registry>/$controller
  done
+```
+
+Manifest example:
+
+```yaml
+spec:
+  distribution:
+    version: 2.7.x
+    registry: <your-registry>
+    variant: enterprise-distroless-fips
 ```
 
 ### Rotate the Flux GitHub PAT
