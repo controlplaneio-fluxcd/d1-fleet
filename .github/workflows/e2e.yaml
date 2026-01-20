@@ -16,7 +16,7 @@ jobs:
       uses: helm/kind-action@main
     - name: Bootstrap Flux
       env:
-        GITHUB_TOKEN: ${{ secrets.FLUX_BOOTSTRAP }} # used implicitly by the command flux bootstrap github
+        GITHUB_TOKEN: ${{ secrets.FLUX_BOOTSTRAP }}
         GITHUB_OWNER: ${{ github.repository_owner }}
       run: |
         helm install flux-operator oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator \

@@ -79,7 +79,7 @@ bootstrap command ever again nor connect to the cluster.
 
 ### Bootstrap the staging cluster
 
-Make sure to set the default context in your kubeconfig to your staging cluster, then run bootstrap with:
+Make sure to set the default context in your kubeconfig to your staging cluster, then run the following:
 
 ```shell
 export GITHUB_TOKEN=<Flux Bot PAT>
@@ -109,7 +109,7 @@ flux create secret git flux-apps \
 ```
 
 From this point on, the Flux controllers will reconcile the cluster state with the desired state. Any changes
-to the `cluster/staging` directory in the `d1-fleet` repository will be automatically applied to the cluster.
+to the `clusters/staging` directory in the `d1-fleet` repository will be automatically applied to the cluster.
 
 ### Upgrade to the enterprise version
 
@@ -384,39 +384,38 @@ Flux image automation controllers and their access to the dev team repository.
 
 ## Bootstrap the production clusters
 
-Make sure to set the default context in your kubeconfig to your production cluster, then run bootstrap with:
+Make sure to set the default context in your kubeconfig to your production cluster, then run the following:
 
 ```shell
-export GITHUB_TOKEN=<Flux platform PAT>
+export GITHUB_TOKEN=<Flux Bot PAT>
+export GITHUB_OWNER=<Your GitHub org or user>
 
-flux bootstrap github \
-  --registry=ghcr.io/fluxcd \
-  --owner=controlplaneio-fluxcd \
-  --repository=d1-fleet \
-  --branch=main \
-  --token-auth \
-  --path=clusters/prod-eu
-```
+# Install the Flux Operator Helm chart
+helm install flux-operator oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator \
+  --namespace flux-system \
+  --create-namespace
 
-After bootstrap, Flux will provision the production cluster with add-ons from `production`
-branch of the `d1-infra` repository.
+# Create the flux-system Git secret with the Flux bot PAT
+flux create secret git flux-system \
+  --url=https://github.com/${GITHUB_OWNER}/d1-fleet \
+  --username=git \
+  --password=$GITHUB_TOKEN
 
-To kick off the reconciliation of the tenant applications, the platform team must create the 
-`flux-apps` secret in the `flux-system` namespace with the tenant's GitHub PAT:
+# Apply the FluxInstance custom resource to bootstrap Flux
+kubectl apply -f clusters/prod-eu/flux-system/flux-instance.yaml
 
-```shell
-export APPS_GITHUB_TOKEN=<Flux apps PAT>
-
+# Onboard the apps tenant by creating the flux-apps secret with the apps GitHub PAT
 flux create secret git flux-apps \
   --namespace=flux-system \
   --label=toolkit.fluxcd.io/tenant=apps \
   --url=https://github.com \
   --username=git \
-  --password=$APPS_GITHUB_TOKEN
+  --password=$GITHUB_TOKEN
 ```
 
-After the `d1-infra` repository reconciles, Flux will proceed to reconcile the tenant applications
-from the `production` branch of the `d1-apps` repository.
+From this point on, the Flux controllers will reconcile the cluster state with the desired state. Any changes
+to the `clusters/prod-eu` directory in the `d1-fleet` repository in the `production` branch will be automatically
+applied to the cluster.
 
 ### Monitoring
 
