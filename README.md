@@ -415,8 +415,9 @@ flux create secret git flux-apps \
 ```
 
 From this point on, the Flux controllers will reconcile the cluster state with the desired state. Any changes
-to the `clusters/prod-eu` directory in the `d1-fleet` repository in the `production` branch will be automatically
-applied to the cluster.
+to the `clusters/prod-eu` directory in the `d1-fleet` repository in the `main` branch will be automatically
+applied to the cluster. The apps and infra components will be reconciled from the `production` branch of the
+`d1-infra` and `d1-apps` repositories.
 
 ### Monitoring
 

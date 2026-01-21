@@ -23,7 +23,7 @@ spec:
   sync:
     kind: GitRepository
     url: https://github.com/controlplaneio-fluxcd/d1-fleet.git
-    ref: "refs/heads/production"
+    ref: "refs/heads/main"
     path: "clusters/prod-us"
     pullSecret: flux-system
   kustomize:
