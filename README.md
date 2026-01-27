@@ -44,23 +44,34 @@ the Flux controllers running on clusters to authenticate with GitHub.
 
 Create a GitHub team under your organisation for the bot account and give it the following permissions:
 
-- Read and write access to the `d1-fleet` repository (required for cluster bootstrap)
-- Push access to the `main` branch of the `d1-fleet` repository (required for cluster bootstrap)
+- Read-only access to the `d1-fleet` repository (required for cluster bootstrap)
 - Read and write access to the `d1-infra` and `d1-apps` repositories (required for cluster reconciliation and image automation)
 
 ### Flux GitHub PAT for platform components
 
 Create a GitHub fine-grained personal access token for the bot account with
-the following permissions for the `d1-infra`, `d1-apps` and `d1-fleet` repositories:
+the following permissions for the `d1-fleet` repository:
+
+- `Administration` -> `Access: Read-only`
+- `Commit statuses` -> `Access: Read and write`
+- `Contents` -> `Access: Read-only`
+- `Metadata` -> `Access: Read-only`
+
+This token will be stored in all clusters to authenticate with GitHub to pull the fleet
+desired state from the `d1-fleet` repository.
+
+Create a second GitHub fine-grained personal access token for the bot account with
+the following permissions for the `d1-infra` and `d1-apps` repositories:
 
 - `Administration` -> `Access: Read-only`
 - `Commit statuses` -> `Access: Read and write`
 - `Contents` -> `Access: Read and write`
 - `Metadata` -> `Access: Read-only`
 
-This token will be stored in all clusters to authenticate with GitHub to pull the fleet desired state
-from the `d1-fleet` and `d1-infra` repositories. The token is also used to automate the
-Helm chart updates in the `d1-infra` repository, where the bot account has push access to the main branch.
+This token will be stored in all clusters to authenticate with GitHub to pull the fleet
+desired state from the `d1-infra` repository. The token is also used to automate the
+Helm chart updates in the `d1-infra` and `d1-apps` repositories, where the bot account
+has push access to the main branch.
 
 ## Bootstrap Procedure
 
